@@ -1,0 +1,121 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ToDoList</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/ToDoList.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="//cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container-fluid">
+                <a class="navbar-brand" asp-area="" asp-controller="Task" asp-action="Index">ToDoList</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Task" asp-action="Index">Home</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="controller">
+        <div class="row">
+            <div class="col-md-4 order-md-2 mb-4">
+                <h4 class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Completed tasks</span>
+                    <span class="badge badge-secondary badge-pill text-muted" id="countOfComplitedTasks"></span>
+                </h4>
+                <ul class="list-group mb-3" id="completedListTasks"></ul>
+                <form>
+                    <div class="card col-md-12">
+                        <button type="submit" class="btn btn-secondary" id="finishDayButton">Finish the day</button>
+
+                    </div>
+                </form>
+                <br />
+                <div class="form-group">
+                    <label>My notes</label>
+                    <textarea class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="col-md-8 order-md-1">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        $(document).ready(function () {
+            $.ajax({
+                type: 'GET',
+                url: '@Url.Action("GetCompletedTasks", "Task")',
+                success: function (data) {
+                    const ulElemetns = $('#completedListTasks');
+                    for (var i = 0; i < data.data.length; i++) {
+                        const task = data.data[i];
+                        ulElemetns.append(`
+                               <li class= "list-group-item d-flex justify-content-between lh-condensed" style = "background-color: #affbf">
+                                 <div>
+                                    <h6 class="my-0" > Name: ${task.name} </h6>
+                                    <small class= "text-muted" > Description: ${task.description} </small>
+                                </div>
+                                </li>
+                               `)
+                    }
+                    $('#countOfComplitedTasks').text(data.data.length);
+                }
+            })
+        })
+    </script>
+    <script type="text/javascript" src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        
+        $(document).ready(function () {
+           
+           $('#finishDayButton').on('click', function(e) {
+              
+                $('#completedListTasks').find('input, textarea, select').val('');
+                $.ajax({
+                    type: 'DELETE',
+                    url: '@Url.Action("EndDay", "Task")',
+                    success: function (respond) {
+                        Swal.fire({
+                            title: 'Info',
+                            text: respond.description,
+                            icon: 'success',
+                            confirmButtonText: 'Ok'
+                        });
+                    },
+                    error: function(error){
+                        Swal.fire({
+                            title: 'Error',
+                            text: error.description,
+                            icon: 'error',
+                            confirmButtonText: 'Ok'
+                        });
+                    }
+                });
+                e.preventDefault();
+            })
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

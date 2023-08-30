@@ -1,0 +1,157 @@
+﻿@using ToDoList.Domain.Enum;
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<h4 class="mb-3 text-muted">Create task</h4>
+<form id="createTaskForm">
+    <div class="mb-3">
+        <label class="form-lable">Task name</label>
+        <input name="name" type="text" class="form-control " />
+
+    </div>
+    <label class="form-lable">Task priority</label>
+    <select name="priority" class="form-select mb-3" asp-items="Html.GetEnumSelectList<Priority>()"></select>
+    <div class="mb-3">
+        <label class="form-lable">Task description</label>
+        <textarea name="description" type="text" class="form-control" rows="3"></textarea>
+    </div>
+    <button id="createTask" class="create-button">Create</button>
+    <style>
+        .create-button {
+            background-color: white;
+            color: deepskyblue;
+            border-color: deepskyblue;
+            cursor: pointer;
+            height: 40px;
+            width: 64px;
+            border-radius: 2px;
+        }
+    </style>
+</form>
+
+<table class="table table-dark table-hover" id="taskTableId">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Complexity</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
+</table>
+
+@section Scripts
+    {
+
+    <script type="text/javascript" src="//cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+
+        const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: 'btn btn-success',
+            },
+            buttonsStyling: false
+        })
+
+
+        let dataTable = $('#taskTableId').DataTable({
+            info: true,
+            serverSide: true,
+            searching: false,
+            paging: false,
+            sorting: true,
+            ajax: {
+                url: "@Url.Action("TaskHandler")",
+                method: 'POST',
+                data: null
+            },
+            columns: [
+                { data: 'name' },
+                { data: 'priority' },
+                { data: 'description' },
+                { data: 'isDone' },
+                {
+                    data: null,
+                    sortable: false,
+                    render: function (data, type) {
+                        return '<button class = "btn btn-success btn-sm center-block">Perform</button>'
+                    }
+                }
+            ],
+            createdRow: function (nRow, data) {
+
+                var handlerComplete = function () {
+                    swalWithBootstrapButtons.fire({
+                        title: 'Are you sure?',
+                        icon: 'warning',
+                        confirmButtonText: 'Yes, delete it!',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            $.ajax({
+                                type: 'POST',
+                                url: '@Url.Action("EndTask")',
+                                data: { id: data.id },
+                                success: function (response) {
+                                    Swal.fire({
+                                        title: 'Info',
+                                        text: response.description,
+                                        icon: 'success',
+                                        confirmButtonText: 'Ok'
+                                    })
+                                    dataTable.draw();
+                                },
+                                error: function (response) {
+                                    Swal.fire({
+                                        title: 'Info',
+                                        text: response.responseJSON.description,
+                                        icon: 'error',
+                                        confirmButtonText: 'Ok'
+                                    })
+                                }
+                            })
+                        }
+                    })
+
+                }
+
+                for (var i = 0; i < dataTable.columns().header().length - 1; i++) {
+                    $('td', nRow).eq(i).css('cursor', 'pointer');
+
+                    $('td', nRow).eq(i).on('click', null);
+                }
+                $('td button', nRow).on('click', handlerComplete);
+            }
+        });
+
+        $('#createTask').on('click', function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '@Url.Action("Create", "Task")',
+                data: $('#createTaskForm').serialize(),
+                success: function (response) {
+                    Swal.fire({
+                        title: 'Info',
+                        text: response.description,
+                        icon: 'success',
+                        confirmButtonText: 'Ok'
+                    })
+                },
+                error: function (response) {
+                    Swal.fire({
+                        title: 'Info',
+                        text: response.responseJSON.description,
+                        icon: 'error',
+                        confirmButtonText: 'Ok'
+                    })
+                }
+            })
+        });
+    </script>
+}
